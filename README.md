@@ -1,6 +1,6 @@
 # 🚀 AI Career Guide System
 
-🌐 Live Demo: (Coming Soon)
+🌐 Live Demo: https://ai-career-guide-gnjb.onrender.com
 
 An intelligent AI-powered resume analysis web application that evaluates skills, detects domain alignment, provides career feedback, and generates downloadable reports.
 
