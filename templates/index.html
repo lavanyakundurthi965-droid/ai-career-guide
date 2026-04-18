@@ -1,0 +1,187 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>AI Career Guide</title>
+    <style>
+        body {
+            font-family: Arial;
+            background: linear-gradient(to right, #667eea, #764ba2);
+            margin: 0;
+            padding: 0;
+            color: #333;
+        }
+
+        .container {
+            width: 60%;
+            margin: 50px auto;
+        }
+
+        .card {
+            background: white;
+            padding: 25px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+        }
+
+        h1 {
+            text-align: center;
+            color: white;
+        }
+
+        input, select, button {
+            width: 90%;
+            padding: 10px;
+            margin: 10px 0;
+            border-radius: 5px;
+            border: 1px solid #ccc;
+        }
+
+        button {
+            background-color: #667eea;
+            color: white;
+            font-weight: bold;
+            cursor: pointer;
+        }
+
+        button:hover {
+            background-color: #5a67d8;
+        }
+
+        .score {
+            font-size: 24px;
+            font-weight: bold;
+            color: green;
+        }
+
+        .warning {
+            color: red;
+            font-weight: bold;
+        }
+
+        .success {
+            color: green;
+            font-weight: bold;
+        }
+
+        a {
+            text-decoration: none;
+        }
+    </style>
+</head>
+
+<body>
+
+<h1>🚀 AI Career Guide</h1>
+
+<div class="container">
+
+    <!-- FORM -->
+    <div class="card">
+        <form method="post" enctype="multipart/form-data">
+            <input type="text" name="name" placeholder="Enter your name" required>
+
+            <input type="file" name="resume" required>
+
+            <select name="choice">
+                <option value="1">Technology</option>
+                <option value="2">Creativity</option>
+                <option value="3">Business</option>
+            </select>
+
+            <button type="submit">Analyze Resume</button>
+        </form>
+    </div>
+
+    <!-- SCORE -->
+    {% if score %}
+    <div class="card">
+        <h3>📊 Resume Score</h3>
+        <p class="score">{{ score }} / 100</p>
+        <p><strong>Level:</strong> {{ level }}</p>
+    </div>
+    {% endif %}
+
+    <!-- DOMAIN MATCH -->
+    {% if domain_match_message %}
+    <div class="card">
+        <h3>🧠 Domain Analysis</h3>
+
+        {% if "⚠️" in domain_match_message %}
+            <p class="warning">{{ domain_match_message }}</p>
+        {% else %}
+            <p class="success">{{ domain_match_message }}</p>
+        {% endif %}
+
+    </div>
+    {% endif %}
+
+    <!-- SCORE BREAKDOWN -->
+    {% if score_breakdown %}
+    <div class="card">
+        <h3>📈 Score Breakdown</h3>
+        <ul>
+            {% for key, value in score_breakdown.items() %}
+                <li>{{ key }}: {{ value }}</li>
+            {% endfor %}
+        </ul>
+    </div>
+    {% endif %}
+
+    <!-- DETECTED SKILLS -->
+    {% if skills %}
+    <div class="card">
+        <h3>🧠 Detected Skills</h3>
+        <ul>
+            {% for skill in skills %}
+                <li>{{ skill }}</li>
+            {% endfor %}
+        </ul>
+    </div>
+    {% endif %}
+
+    <!-- MISSING SKILLS -->
+    {% if missing_skills %}
+    <div class="card">
+        <h3>⚠️ Missing Skills</h3>
+        <ul>
+            {% for skill in missing_skills %}
+                <li>{{ skill }}</li>
+            {% endfor %}
+        </ul>
+    </div>
+    {% endif %}
+
+    <!-- ACTION PLAN -->
+    {% if action_plan %}
+    <div class="card">
+        <h3>📌 Action Plan</h3>
+        <ul>
+            {% for step in action_plan %}
+                <li>{{ step }}</li>
+            {% endfor %}
+        </ul>
+    </div>
+    {% endif %}
+
+    <!-- FEEDBACK -->
+    {% if ai_feedback %}
+    <div class="card">
+        <h3>🤖 AI Feedback</h3>
+        <p>{{ ai_feedback }}</p>
+    </div>
+    {% endif %}
+
+    <!-- DOWNLOAD BUTTON -->
+    {% if score %}
+    <div class="card" style="text-align:center;">
+        <a href="/download">
+            <button>📄 Download Report</button>
+        </a>
+    </div>
+    {% endif %}
+
+</div>
+
+</body>
+</html>
