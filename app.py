@@ -5,7 +5,12 @@ from reportlab.lib.pagesizes import letter
 from reportlab.pdfgen import canvas
 
 app = Flask(__name__)
-app.config["UPLOAD_FOLDER"] = "uploads"
+
+UPLOAD_FOLDER = "uploads"
+app.config["UPLOAD_FOLDER"] = UPLOAD_FOLDER
+
+# ✅ CREATE FOLDER AUTOMATICALLY (FIX)
+os.makedirs(UPLOAD_FOLDER, exist_ok=True)
 
 last_result = {}
 
@@ -27,7 +32,6 @@ def home():
         name = request.form["name"]
         choice = request.form["choice"]
 
-        # CATEGORY DEFINITIONS
         categories = {
             "1": {
                 "name": "Technology",
@@ -46,6 +50,7 @@ def home():
         selected_category = categories[choice]
 
         file = request.files["resume"]
+
         if file:
             filepath = os.path.join(app.config["UPLOAD_FOLDER"], file.filename)
             file.save(filepath)
@@ -57,7 +62,6 @@ def home():
 
             text_lower = text.lower()
 
-            # 🔍 DETECT DOMAIN
             domain_scores = {}
 
             for key, value in categories.items():
@@ -69,7 +73,6 @@ def home():
 
             detected_domain = max(domain_scores, key=domain_scores.get)
 
-            # 🎯 MATCH CHECK
             if detected_domain != selected_category["name"]:
                 domain_match_message = f"⚠️ Your resume matches {detected_domain}, but you selected {selected_category['name']}."
                 penalty = 15
@@ -77,14 +80,12 @@ def home():
                 domain_match_message = f"✅ Your resume matches the selected domain ({selected_category['name']})."
                 penalty = 0
 
-            # SKILLS
             for skill in selected_category["keywords"]:
                 if skill in text_lower:
                     skills.append(skill)
                 else:
                     missing_skills.append(skill)
 
-            # SCORE
             score = 50
             score_breakdown["Base"] = 50
 
@@ -96,16 +97,11 @@ def home():
             score += project_score
             score_breakdown["Projects"] = project_score
 
-            # APPLY PENALTY
             score -= penalty
             score_breakdown["Domain Penalty"] = -penalty
 
-            if score < 0:
-                score = 0
-            if score > 100:
-                score = 100
+            score = max(0, min(score, 100))
 
-            # LEVEL
             if score < 50:
                 level = "Beginner"
             elif score < 80:
@@ -113,13 +109,11 @@ def home():
             else:
                 level = "Strong"
 
-            # ACTION PLAN
             for skill in missing_skills:
                 action_plan.append(f"Learn {skill}")
 
             first_name = name.split()[-1] if name else "User"
 
-            # ✅ PROFESSIONAL FEEDBACK
             ai_feedback = f"{first_name}, your resume demonstrates a strong foundation in the {detected_domain} domain. "
 
             if detected_domain != selected_category["name"]:
@@ -131,7 +125,6 @@ def home():
 
             ai_feedback += "Consistent skill development and real-world application will significantly enhance your career opportunities."
 
-            # SAVE
             last_result = {
                 "name": name,
                 "score": score,
@@ -155,7 +148,6 @@ def home():
         domain_match_message=domain_match_message
     )
 
-# PDF DOWNLOAD
 @app.route("/download")
 def download():
     file_path = "report.pdf"
