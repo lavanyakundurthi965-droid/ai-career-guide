@@ -1,6 +1,8 @@
 # 🚀 AI Career Guide System
 
-An intelligent AI-powered resume analysis web application.
+🌐 Live Demo: (Coming Soon)
+
+An intelligent AI-powered resume analysis web application that evaluates skills, detects domain alignment, provides career feedback, and generates downloadable reports.
 
 ## 🔍 Features
 - Resume skill detection
