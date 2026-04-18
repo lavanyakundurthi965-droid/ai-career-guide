@@ -9,7 +9,7 @@ app = Flask(__name__)
 UPLOAD_FOLDER = "uploads"
 app.config["UPLOAD_FOLDER"] = UPLOAD_FOLDER
 
-# ✅ CREATE FOLDER AUTOMATICALLY (FIX)
+# Create uploads folder
 os.makedirs(UPLOAD_FOLDER, exist_ok=True)
 
 last_result = {}
@@ -21,16 +21,17 @@ def home():
     name = None
     skills = []
     missing_skills = []
-    score_breakdown = {}
-    action_plan = []
-    ai_feedback = ""
+    role_missing_skills = []
     score = 0
     level = ""
+    ai_feedback = ""
     domain_match_message = ""
+    match_percentage = 0
 
     if request.method == "POST":
         name = request.form["name"]
         choice = request.form["choice"]
+        role = request.form["role"]
 
         categories = {
             "1": {
@@ -47,7 +48,15 @@ def home():
             }
         }
 
+        job_roles = {
+            "Data Scientist": ["python", "machine learning", "statistics", "sql"],
+            "Web Developer": ["html", "css", "javascript", "flask", "git"],
+            "UI/UX Designer": ["figma", "design", "ui", "ux"],
+            "Business Analyst": ["excel", "analytics", "communication", "sql"]
+        }
+
         selected_category = categories[choice]
+        required_role_skills = job_roles.get(role, [])
 
         file = request.files["resume"]
 
@@ -62,46 +71,29 @@ def home():
 
             text_lower = text.lower()
 
-            domain_scores = {}
-
-            for key, value in categories.items():
-                count = 0
-                for word in value["keywords"]:
-                    if word in text_lower:
-                        count += 1
-                domain_scores[value["name"]] = count
-
-            detected_domain = max(domain_scores, key=domain_scores.get)
-
-            if detected_domain != selected_category["name"]:
-                domain_match_message = f"⚠️ Your resume matches {detected_domain}, but you selected {selected_category['name']}."
-                penalty = 15
-            else:
-                domain_match_message = f"✅ Your resume matches the selected domain ({selected_category['name']})."
-                penalty = 0
-
+            # Detect skills
             for skill in selected_category["keywords"]:
                 if skill in text_lower:
                     skills.append(skill)
                 else:
                     missing_skills.append(skill)
 
-            score = 50
-            score_breakdown["Base"] = 50
+            # Role matching
+            matched = 0
+            for skill in required_role_skills:
+                if skill in text_lower:
+                    matched += 1
+                else:
+                    role_missing_skills.append(skill)
 
-            skill_score = len(skills) * 5
-            score += skill_score
-            score_breakdown["Skills"] = skill_score
+            if required_role_skills:
+                match_percentage = int((matched / len(required_role_skills)) * 100)
 
-            project_score = 10 if "project" in text_lower else 0
-            score += project_score
-            score_breakdown["Projects"] = project_score
+            # Score
+            score = 50 + (len(skills) * 5)
+            score = min(score, 100)
 
-            score -= penalty
-            score_breakdown["Domain Penalty"] = -penalty
-
-            score = max(0, min(score, 100))
-
+            # Level
             if score < 50:
                 level = "Beginner"
             elif score < 80:
@@ -109,29 +101,24 @@ def home():
             else:
                 level = "Strong"
 
-            for skill in missing_skills:
-                action_plan.append(f"Learn {skill}")
+            # Feedback
+            first_name = name.split()[-1]
 
-            first_name = name.split()[-1] if name else "User"
+            ai_feedback = f"{first_name}, your resume shows a good foundation in {selected_category['name']}. "
 
-            ai_feedback = f"{first_name}, your resume demonstrates a strong foundation in the {detected_domain} domain. "
+            ai_feedback += f"For the role of {role}, your match is {match_percentage}%. "
 
-            if detected_domain != selected_category["name"]:
-                ai_feedback += f"However, you have selected {selected_category['name']}, which requires a different skill set and may not fully align with your current profile. "
-                ai_feedback += f"If you are aiming to transition into {selected_category['name']}, it is recommended to start building skills in {', '.join(missing_skills)}. "
-                ai_feedback += f"You can also explore hybrid roles that combine your existing expertise with {selected_category['name']}. "
+            if role_missing_skills:
+                ai_feedback += f"You should focus on learning {', '.join(role_missing_skills)} to improve your chances. "
             else:
-                ai_feedback += f"Your profile aligns well with your selected domain. To further strengthen your profile, focus on improving {', '.join(missing_skills)} and building practical projects. "
+                ai_feedback += "Your profile strongly matches this role. "
 
-            ai_feedback += "Consistent skill development and real-world application will significantly enhance your career opportunities."
+            ai_feedback += "Building real-world projects will further strengthen your profile."
 
             last_result = {
                 "name": name,
                 "score": score,
                 "level": level,
-                "skills": skills,
-                "missing_skills": missing_skills,
-                "action_plan": action_plan,
                 "feedback": ai_feedback
             }
 
@@ -139,47 +126,28 @@ def home():
         "index.html",
         name=name,
         skills=skills,
-        ai_feedback=ai_feedback,
-        score=score,
         missing_skills=missing_skills,
-        score_breakdown=score_breakdown,
+        role_missing_skills=role_missing_skills,
+        score=score,
         level=level,
-        action_plan=action_plan,
-        domain_match_message=domain_match_message
+        ai_feedback=ai_feedback,
+        match_percentage=match_percentage
     )
+
 
 @app.route("/download")
 def download():
     file_path = "report.pdf"
     c = canvas.Canvas(file_path, pagesize=letter)
-    y = 750
 
-    def draw_multiline(text, x, y):
-        max_chars = 80
-        while len(text) > max_chars:
-            split_index = text.rfind(" ", 0, max_chars)
-            if split_index == -1:
-                split_index = max_chars
-            line = text[:split_index]
-            c.drawString(x, y, line)
-            text = text[split_index+1:]
-            y -= 15
-        c.drawString(x, y, text)
-        return y - 15
-
-    c.drawString(100, y, f"Name: {last_result.get('name', '')}")
-    y -= 30
-    c.drawString(100, y, f"Score: {last_result.get('score', '')}")
-    y -= 30
-    c.drawString(100, y, f"Level: {last_result.get('level', '')}")
-
-    y -= 40
-    c.drawString(100, y, "Feedback:")
-    y -= 20
-    y = draw_multiline(last_result.get("feedback", ""), 120, y)
+    c.drawString(100, 750, f"Name: {last_result.get('name', '')}")
+    c.drawString(100, 720, f"Score: {last_result.get('score', '')}")
+    c.drawString(100, 690, f"Level: {last_result.get('level', '')}")
+    c.drawString(100, 660, f"Feedback: {last_result.get('feedback', '')}")
 
     c.save()
     return send_file(file_path, as_attachment=True)
+
 
 if __name__ == "__main__":
     app.run(debug=True)
